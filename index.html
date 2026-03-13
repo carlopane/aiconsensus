@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude vs ChatGPT — Consensus</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0d0d12;
+  --surface: #13131a;
+  --surface2: #1a1a24;
+  --border: #22222e;
+  --claude: #e8a045;
+  --openai: #19c37d;
+  --final: #a78bfa;
+  --text: #e2e0f0;
+  --muted: #6b6880;
+  --faint: #2e2e3e;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-image:
+    radial-gradient(ellipse 50% 35% at 10% 10%, rgba(232,160,69,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 35% at 90% 90%, rgba(25,195,125,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 30% at 50% 50%, rgba(167,139,250,0.04) 0%, transparent 60%);
+}
+
+/* Header */
+header {
+  padding: 18px 36px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(13,13,18,0.8);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+.logo em { font-style: italic; color: var(--muted); }
+
+.models {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+.model-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+.model-tag.claude { color: var(--claude); border-color: rgba(232,160,69,0.3); background: rgba(232,160,69,0.06); }
+.model-tag.openai { color: var(--openai); border-color: rgba(25,195,125,0.3); background: rgba(25,195,125,0.06); }
+.model-dot { width: 6px; height: 6px; border-radius: 50%; }
+.model-tag.claude .model-dot { background: var(--claude); }
+.model-tag.openai .model-dot { background: var(--openai); }
+
+/* Setup */
+.setup {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.setup-btn {
+  width: 100%;
+  padding: 11px 36px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.07em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s;
+}
+.setup-btn:hover { color: var(--text); }
+.setup-btn .chevron { transition: transform 0.25s; display: inline-block; }
+.setup-btn.open .chevron { transform: rotate(90deg); }
+
+.setup-body {
+  display: none;
+  padding: 0 36px 20px;
+  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+}
+.setup-body.show { display: grid; }
+
+.field label {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  margin-bottom: 7px;
+}
+.field.claude label { color: var(--claude); }
+.field.openai label { color: var(--openai); }
+
+.field input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.73rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.field.claude input:focus { border-color: rgba(232,160,69,0.5); }
+.field.openai input:focus { border-color: rgba(25,195,125,0.5); }
+
+.setup-note {
+  padding: 0 36px 14px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  display: none;
+}
+.setup-note.show { display: block; }
+
+/* Main */
+.main {
+  flex: 1;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 36px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Feed */
+.feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-height: calc(100vh - 300px);
+  min-height: 180px;
+}
+.feed::-webkit-scrollbar { width: 3px; }
+.feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Empty */
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 0;
+  opacity: 0.35;
+  text-align: center;
+}
+.empty-glyph {
+  font-family: 'DM Serif Display', serif;
+  font-style: italic;
+  font-size: 2.8rem;
+  color: var(--muted);
+}
+.empty p {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+/* Exchange */
+.exchange { animation: rise 0.3s ease; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* User message */
+.q-wrap { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+.q-bubble {
+  max-width: 62%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 18px 18px 4px 18px;
+  padding: 13px 18px;
+  font-size: 0.93rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+/* Processing */
+.proc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 22px;
+}
+
+.proc-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+}
+
+.spin {
+  width: 13px; height: 13px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.rounds {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.round-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+.round-row.active { opacity: 1; }
+.round-row.done { opacity: 0.55; }
+
+.r-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  min-width: 48px;
+}
+
+.r-dots {
+  display: flex;
+  gap: 4px;
+}
+.r-dots span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+}
+.r-dots span.c { background: var(--claude); }
+.r-dots span.o { background: var(--openai); }
+.r-dots.pulse span { animation: blink 1.3s ease infinite; }
+.r-dots.pulse span:nth-child(2) { animation-delay: 0.25s; }
+@keyframes blink { 0%,100%{opacity:0.25} 50%{opacity:1} }
+
+.r-label {
+  font-size: 0.77rem;
+  color: var(--muted);
+}
+
+/* Answer card */
+.answer-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+.answer-top {
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(167,139,250,0.04);
+}
+
+.answer-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  color: var(--final);
+}
+
+.final-dots { display: flex; gap: 4px; }
+.final-dots span { width: 6px; height: 6px; border-radius: 50%; }
+.final-dots span:nth-child(1) { background: var(--claude); }
+.final-dots span:nth-child(2) { background: var(--openai); }
+
+.see-debate {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.see-debate:hover { border-color: var(--muted); color: var(--text); }
+
+.answer-body {
+  padding: 18px 22px;
+  font-size: 0.93rem;
+  line-height: 1.72;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+/* Debate panel */
+.debate-panel {
+  border-top: 1px solid var(--border);
+  display: none;
+}
+.debate-panel.open { display: block; }
+
+.debate-inner { padding: 18px 22px; }
+
+.debate-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.d-round { margin-bottom: 18px; }
+
+.d-round-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.ai-msg {
+  margin-bottom: 10px;
+  padding: 11px 15px;
+  border-radius: 10px;
+  border-left: 3px solid;
+}
+.ai-msg.claude { border-color: var(--claude); background: rgba(232,160,69,0.04); }
+.ai-msg.openai { border-color: var(--openai); background: rgba(25,195,125,0.04); }
+
+.ai-msg-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+.ai-msg.claude .ai-msg-name { color: var(--claude); }
+.ai-msg.openai .ai-msg-name { color: var(--openai); }
+
+.ai-msg-text {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #b0aec8;
+  white-space: pre-wrap;
+}
+
+/* Input */
+.input-zone {
+  padding: 16px 0 28px;
+  border-top: 1px solid var(--border);
+}
+
+.input-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  align-items: flex-end;
+  transition: border-color 0.2s;
+}
+.input-box:focus-within { border-color: #3a3a52; }
+
+textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 15px 18px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.93rem;
+  color: var(--text);
+  resize: none;
+  min-height: 52px;
+  max-height: 130px;
+  line-height: 1.5;
+}
+textarea::placeholder { color: var(--muted); }
+
+.go-btn {
+  margin: 8px;
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.go-btn:hover { background: #fff; transform: scale(1.04); }
+.go-btn:disabled { opacity: 0.2; cursor: not-allowed; transform: none; }
+.go-btn svg { width: 16px; height: 16px; }
+
+.err {
+  margin-top: 10px;
+  padding: 9px 14px;
+  background: rgba(232,160,69,0.08);
+  border: 1px solid rgba(232,160,69,0.2);
+  border-radius: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--claude);
+  display: none;
+}
+
+@media(max-width:600px){
+  header,
+  .setup-btn,
+  .setup-body,
+  .setup-note,
+  .main { padding-left: 16px; padding-right: 16px; }
+  .setup-body { grid-template-columns: 1fr; }
+  .q-bubble { max-width: 85%; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AI <em>Consensus</em></div>
+  <div class="models">
+    <div class="model-tag claude"><div class="model-dot"></div>Claude</div>
+    <div class="model-tag openai"><div class="model-dot"></div>ChatGPT</div>
+  </div>
+</header>
+
+<div class="setup">
+  <button class="setup-btn" id="setupBtn" onclick="toggleSetup()">
+    <span class="chevron">▶</span> CONFIGURA API KEYS
+  </button>
+  <div class="setup-body" id="setupBody">
+    <div class="field claude">
+      <label>CLAUDE — ANTHROPIC</label>
+      <input type="password" id="claudeKey" placeholder="sk-ant-..." />
+    </div>
+    <div class="field openai">
+      <label>CHATGPT — OPENAI</label>
+      <input type="password" id="openaiKey" placeholder="sk-..." />
+    </div>
+  </div>
+  <div class="setup-note" id="setupNote">🔒 Le chiavi restano solo nel tuo browser. Non vengono mai inviate a server esterni.</div>
+</div>
+
+<div class="main">
+  <div class="feed" id="feed">
+    <div class="empty" id="emptyState">
+      <div class="empty-glyph">∞</div>
+      <p>Fai una domanda.<br>Claude e ChatGPT discuteranno tra loro<br>e ti daranno una risposta condivisa.</p>
+    </div>
+  </div>
+
+  <div class="input-zone">
+    <div class="input-box">
+      <textarea id="userInput" placeholder="Scrivi la tua domanda..." rows="1"
+        oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+      <button class="go-btn" id="goBtn" onclick="send()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="err" id="errBar"></div>
+  </div>
+</div>
+
+<script>
+let busy = false;
+let hClaude = [];
+let hOpenAI = [];
+
+function toggleSetup() {
+  const btn = document.getElementById('setupBtn');
+  const body = document.getElementById('setupBody');
+  const note = document.getElementById('setupNote');
+  const open = btn.classList.toggle('open');
+  body.classList.toggle('show', open);
+  note.classList.toggle('show', open);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 130) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function err(msg) {
+  const b = document.getElementById('errBar');
+  b.textContent = msg; b.style.display = 'block';
+  setTimeout(() => b.style.display = 'none', 6000);
+}
+
+function keys() {
+  return {
+    claude: document.getElementById('claudeKey').value.trim(),
+    openai: document.getElementById('openaiKey').value.trim()
+  };
+}
+
+function hasKey() {
+  const k = keys();
+  return k.claude || k.openai;
+}
+
+async function callClaude(msgs) {
+  const k = keys().claude;
+  if (!k) throw new Error('API key Claude mancante');
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': k, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, messages: msgs })
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error('Claude: ' + (e.error?.message || r.status));
+  }
+  return (await r.json()).content[0].text;
+}
+
+async function callOpenAI(msgs) {
+  const k = keys().openai;
+  if (!k) throw new Error('API key OpenAI mancante');
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k },
+    body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens: 1024, messages: msgs })
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error('ChatGPT: ' + (e.error?.message || r.status));
+  }
+  return (await r.json()).choices[0].message.content;
+}
+
+const NAMES = { claude: 'CLAUDE', openai: 'CHATGPT' };
+const ACTIVE = ['claude', 'openai'];
+
+async function send() {
+  if (busy) return;
+  const input = document.getElementById('userInput');
+  const question = input.value.trim();
+  if (!question) return;
+  if (!hasKey()) { err('⚠ Inserisci almeno una API key per iniziare.'); return; }
+
+  busy = true;
+  document.getElementById('goBtn').disabled = true;
+  input.value = ''; input.style.height = 'auto';
+  document.getElementById('emptyState')?.remove();
+
+  const feed = document.getElementById('feed');
+  const exchange = document.createElement('div');
+  exchange.className = 'exchange';
+
+  // User bubble
+  const qw = document.createElement('div'); qw.className = 'q-wrap';
+  const qb = document.createElement('div'); qb.className = 'q-bubble';
+  qb.textContent = question; qw.appendChild(qb);
+  exchange.appendChild(qw);
+
+  // Processing block
+  const proc = document.createElement('div'); proc.className = 'proc';
+  const statusDiv = document.createElement('div'); statusDiv.className = 'proc-status';
+  statusDiv.innerHTML = '<div class="spin"></div><span id="statusTxt">Le AI stanno elaborando...</span>';
+  proc.appendChild(statusDiv);
+
+  const roundsDiv = document.createElement('div'); roundsDiv.className = 'rounds';
+  const roundDefs = [
+    { tag: 'R1', label: 'Prima risposta indipendente' },
+    { tag: 'R2', label: 'Confronto e revisione' },
+    { tag: 'R3', label: 'Affinamento finale' },
+    { tag: '∑',  label: 'Sintesi consensuale' }
+  ];
+
+  const rowEls = roundDefs.map((rd, i) => {
+    const row = document.createElement('div');
+    row.className = 'round-row' + (i === 0 ? ' active' : '');
+    row.innerHTML = `<span class="r-tag">${rd.tag}</span>
+      <div class="r-dots${i === 0 ? ' pulse' : ''}">
+        ${keys().claude ? '<span class="c"></span>' : ''}
+        ${keys().openai ? '<span class="o"></span>' : ''}
+      </div>
+      <span class="r-label">${rd.label}</span>`;
+    rowsDiv: roundsDiv.appendChild(row);
+    return row;
+  });
+
+  proc.appendChild(roundsDiv);
+  exchange.appendChild(proc);
+  feed.appendChild(exchange);
+  feed.scrollTop = feed.scrollHeight;
+
+  function setActive(idx) {
+    rowEls.forEach((r, i) => {
+      r.classList.remove('active', 'done');
+      r.querySelector('.r-dots').classList.remove('pulse');
+      if (i < idx) r.classList.add('done');
+      else if (i === idx) { r.classList.add('active'); r.querySelector('.r-dots').classList.add('pulse'); }
+    });
+    document.getElementById('statusTxt').textContent = roundDefs[idx].label + '...';
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  const activeAIs = ACTIVE.filter(ai => keys()[ai]);
+  const localH = { claude: [...hClaude], openai: [...hOpenAI] };
+  const debateRounds = [];
+
+  try {
+    // ROUND 1
+    setActive(0);
+    activeAIs.forEach(ai => localH[ai].push({ role: 'user', content: question }));
+    const r1 = {};
+    await Promise.all(activeAIs.map(async ai => {
+      r1[ai] = ai === 'claude' ? await callClaude(localH[ai]) : await callOpenAI(localH[ai]);
+      localH[ai].push({ role: 'assistant', content: r1[ai] });
+    }));
+    debateRounds.push({ label: 'Round 1 — Prima risposta', replies: { ...r1 } });
+
+    // ROUND 2
+    if (activeAIs.length > 1) {
+      setActive(1);
+      const r2 = {};
+      await Promise.all(activeAIs.map(async ai => {
+        const other = activeAIs.find(o => o !== ai);
+        const prompt = `L'altra AI (${NAMES[other]}) ha risposto:\n\n"${r1[other]}"\n\nRivedi la tua risposta: cosa confermi, correggi o aggiungi tenendo conto di quanto detto?`;
+        localH[ai].push({ role: 'user', content: prompt });
+        r2[ai] = ai === 'claude' ? await callClaude(localH[ai]) : await callOpenAI(localH[ai]);
+        localH[ai].push({ role: 'assistant', content: r2[ai] });
+      }));
+      debateRounds.push({ label: 'Round 2 — Confronto e revisione', replies: { ...r2 } });
+
+      // ROUND 3
+      setActive(2);
+      const r3 = {};
+      await Promise.all(activeAIs.map(async ai => {
+        const other = activeAIs.find(o => o !== ai);
+        const prompt = `Dopo il confronto, ${NAMES[other]} ha aggiornato la sua risposta:\n\n"${r2[other]}"\n\nScrivi la tua risposta definitiva, integrando tutto ciò che avete discusso. Sii chiaro e completo.`;
+        localH[ai].push({ role: 'user', content: prompt });
+        r3[ai] = ai === 'claude' ? await callClaude(localH[ai]) : await callOpenAI(localH[ai]);
+        localH[ai].push({ role: 'assistant', content: r3[ai] });
+      }));
+      debateRounds.push({ label: 'Round 3 — Affinamento finale', replies: { ...r3 } });
+
+      // SYNTHESIS
+      setActive(3);
+      const synthPrompt = `Queste sono le risposte finali di Claude e ChatGPT dopo 3 round di dibattito sulla domanda: "${question}"
+
+CLAUDE: "${r3['claude'] || r1['claude']}"
+
+CHATGPT: "${r3['openai'] || r1['openai']}"
+
+Produci una risposta unica, definitiva e condivisa che sintetizzi il meglio di entrambe. Sii diretto, chiaro e conciso.`;
+
+      const synthAI = activeAIs[0];
+      const finalAnswer = synthAI === 'claude'
+        ? await callClaude([{ role: 'user', content: synthPrompt }])
+        : await callOpenAI([{ role: 'user', content: synthPrompt }]);
+
+      // Update global histories
+      hClaude = localH.claude;
+      hOpenAI = localH.openai;
+
+      // Build final answer card
+      proc.remove();
+      const exchId = 'ex_' + Date.now();
+      exchange.id = exchId;
+
+      const card = document.createElement('div'); card.className = 'answer-card';
+
+      const top = document.createElement('div'); top.className = 'answer-top';
+      top.innerHTML = `
+        <div class="answer-label">
+          <div class="final-dots"><span></span><span></span></div>
+          RISPOSTA CONDIVISA
+        </div>
+        <button class="see-debate" onclick="toggleDebate('${exchId}')">👁 Mostra dibattito</button>`;
+      card.appendChild(top);
+
+      const body = document.createElement('div'); body.className = 'answer-body';
+      body.textContent = finalAnswer;
+      card.appendChild(body);
+
+      // Debate panel
+      const dp = document.createElement('div'); dp.className = 'debate-panel'; dp.id = 'dp_' + exchId;
+      const di = document.createElement('div'); di.className = 'debate-inner';
+      di.innerHTML = '<div class="debate-title">— DIBATTITO INTERNO TRA LE AI —</div>';
+
+      debateRounds.forEach(round => {
+        const rb = document.createElement('div'); rb.className = 'd-round';
+        rb.innerHTML = `<div class="d-round-title">${round.label}</div>`;
+        activeAIs.forEach(ai => {
+          if (round.replies[ai]) {
+            const msg = document.createElement('div'); msg.className = `ai-msg ${ai}`;
+            msg.innerHTML = `<div class="ai-msg-name">${NAMES[ai]}</div><div class="ai-msg-text">${esc(round.replies[ai])}</div>`;
+            rb.appendChild(msg);
+          }
+        });
+        di.appendChild(rb);
+      });
+
+      dp.appendChild(di);
+      card.appendChild(dp);
+      exchange.appendChild(card);
+
+    } else {
+      // Solo una AI
+      setActive(3);
+      proc.remove();
+      const card = document.createElement('div'); card.className = 'answer-card';
+      const top = document.createElement('div'); top.className = 'answer-top';
+      top.innerHTML = `<div class="answer-label"><div class="final-dots"><span></span></div>RISPOSTA</div>`;
+      card.appendChild(top);
+      const body = document.createElement('div'); body.className = 'answer-body';
+      body.textContent = r1[activeAIs[0]];
+      card.appendChild(body);
+      exchange.appendChild(card);
+      hClaude = localH.claude;
+      hOpenAI = localH.openai;
+    }
+
+  } catch(e) {
+    proc.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--claude)">❌ ${esc(e.message)}</div>`;
+    console.error(e);
+  }
+
+  feed.scrollTop = feed.scrollHeight;
+  busy = false;
+  document.getElementById('goBtn').disabled = false;
+  input.focus();
+}
+
+function toggleDebate(exchId) {
+  const dp = document.getElementById('dp_' + exchId);
+  const btn = document.querySelector('#' + exchId + ' .see-debate');
+  if (!dp) return;
+  const open = dp.classList.toggle('open');
+  btn.textContent = open ? '🙈 Nascondi dibattito' : '👁 Mostra dibattito';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
